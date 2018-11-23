@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+		<script src='jquery-1.12.4.min.js'></script>
+	<script src='highcharts.js'></script>
+   <script src="https://img.hcharts.cn/highcharts/highcharts-more.js"></script>
+   <script src="https://img.hcharts.cn/highcharts-plugins/highcharts-zh_CN.js"></script>
+</head>
+<body>
+	<center>
+		<form action="">
+			<table>
+				<h2>天气查询</h2>
+				<input type="text" id="city" name="city">
+				<div id="container" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+        
+			</table>
+		</form>
+	</center>
+</body>
+</html>
+<script>
+	$(function(){
+		$('#city').on('blur',function(){
+			var city=$('#city').val();
+			if (city=='') {
+				alert('文本框不能为空');
+				return;
+			}
+			if(city.length>10)
+			{
+				alert('文本框中数据不得超过10个字符');
+				return;
+			}
+			alert(city);
+			$.ajax({
+			url:'index.php',		// 在process.php文件中调用天气接口获取天气信息、入库、入redis、返回天所数据到前台（此文件）
+			type:'get',
+			dataType:'json',
+			data:{'city':city},
+			// data 就是后台返回的数据（json格式）
+			success:function(data){
+				var resultArr=new Array();			// 使用构造函数Array创建新数组，用于存储日期的温度值
+				var tempArr=new Array();
+				//data=JSON.parse(data);
+				// data=jQuery.parseJSON(data) 
+				data=eval(data);
+				// 重构data，得到温度数组
+				for(var i=0;i<data.length;i++){
+					tempArr.push(data[i]['date']);		// 每天的日期
+					var max=data[i]['tmp_max'];
+					var min=data[i]['tmp_min'];
+
+					var arr=[max,min];
+					var tmpArr=arr.map(Number);			// 将一维数组中元素是字符串形式的数值转换成真正的数值
+					//console.log(tmpArr);
+					resultArr.push(tmpArr);		// 将temArr这个临时数组存放到resultArr数组中,构造成了二维数组
+					
+				}
+				//console.log(resultArr);
+				// 调用showWeather函数展示图表
+				showWeather(tempArr,resultArr);
+			}
+		});
+		})
+	})
+function showWeather(tem,res){
+	var options={
+		chart:{
+			type:'columnrange',
+			 inverted: true,		// 反转横轴和纵轴
+			//events:{load:requestData}
+		},
+		title:{text:'温度变化范围'},
+		//xAxis:{categories:['北京','上海','天津','深圳','八维']},
+		xAxis: {categories: tem},
+		yAxis:{title:{text:'温度值'}},
+
+	    plotOptions: {
+	        columnrange: {
+	            dataLabels: {
+	                enabled: true,
+	                formatter: function () {
+	                    return this.y + '°C';
+	                }
+	            }
+	        }
+	    },		
+		// 设置数组系列（具体要展示的数据—）
+		series:[
+		{name:'随机数据',data:res}
+		]
+	};
+	// 初始化图表 语法 var chart=highcharts.chart('容器ID',图表配置对象);
+	var chart=Highcharts.chart('container',options);
+	
+}
+</script>
